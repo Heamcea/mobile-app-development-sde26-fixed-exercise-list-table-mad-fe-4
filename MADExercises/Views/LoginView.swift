@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct LoginView: View {
     
     @State private var email = ""
     
@@ -15,6 +15,8 @@ struct ContentView: View {
     
     @State private var isLoading = false
     
+    @State private var isLoggedIn = false
+        
     @State private var alertTitle = ""
     
     @State private var alertMessage = ""
@@ -28,7 +30,11 @@ struct ContentView: View {
     
     @FocusState private var focusedField: Field?
     
-    private let apiClient = APIClient()
+    let apiClient: APIClient
+    
+    @State private var navigateToCountries = false
+    
+    @State private var loggedInUser: User?
     
     var body: some View {
         ZStack {
@@ -110,6 +116,11 @@ struct ContentView: View {
                         .disabled(isLoading)
                     }
                 }
+                if let loggedInUser {
+                    NavigationLink(destination: CountriesView(loggedInUser: loggedInUser, apiClient: apiClient), isActive: $navigateToCountries){
+                        EmptyView()
+                    }
+                }
             }
             .padding(24)
             .background(Color.white)
@@ -117,6 +128,7 @@ struct ContentView: View {
             .frame(maxWidth: 440)
             .padding(.horizontal, 16)
             .shadow(color: Color.black.opacity(0.1), radius: 10)
+            .toolbar(.hidden, for: .navigationBar)
             .alert(alertTitle, isPresented: $showAlert){
                 Button("OK", role: .cancel){
                 }
@@ -148,6 +160,8 @@ struct ContentView: View {
             
             if let user {
                 displayAlert("Success", "Login successful for \(user.email)")
+                loggedInUser = user
+                navigateToCountries = true
                 return
             }
             
@@ -188,5 +202,4 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
 }
