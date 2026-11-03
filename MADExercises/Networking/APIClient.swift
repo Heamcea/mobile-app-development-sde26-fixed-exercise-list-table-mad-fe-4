@@ -120,11 +120,14 @@ class APIClient {
         task.resume()
     }
     
-    func getCountries(loggedInUser: User) {
+    func getCountries(loggedInUser: User,
+                      completionHandler: @escaping ([Country]?, NetworkingError?) -> Void) {
         let endpoint = "https://firestore.googleapis.com/v1/projects/mad-fe/databases/(default)/documents/countries?pageSize=1000&orderBy=name"
         
         guard let url = URL(string: endpoint) else {
-            print("URL incorrect")
+            DispatchQueue.main.async {
+                completionHandler(nil, .unexpectedError)
+            }
             return
         }
         
@@ -135,21 +138,78 @@ class APIClient {
         request.setValue("Bearer \(loggedInUser.idToken)", forHTTPHeaderField: "Authorization")
         
         let task = urlSession.dataTask(with: request) { data, response, error in
-            
-            #if DEBUG
-            print("Counties Data")
-            
-            if let data {
-                print(
-                    String(data: data, encoding: .utf8) ?? "can't convert countries to string"
-                )
+            if let error {
+                DispatchQueue.main.async {
+                    if let urlError = error as? URLError,
+                       urlError.code == .notConnectedToInternet {
+                        completionHandler(
+                            nil,
+                            .networkUnavailable(
+                                urlError.localizedDescription
+                            )
+                        )
+                    } else {
+                        completionHandler(nil, .unexpectedError)
+                    }
+                }
+
+                return
             }
-            
-            print(response as Any)
-            print(error as Any)
-            #endif
+
+            guard let data else {
+                DispatchQueue.main.async {
+                    completionHandler(nil, .invalidResponse)
+                }
+
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                DispatchQueue.main.async {
+                    completionHandler(nil, .invalidResponse)
+                }
+
+                return
+            }
+
+            guard (200..<300).contains(httpResponse.statusCode) else {
+                DispatchQueue.main.async {
+                    completionHandler(
+                        nil,
+                        .unsuccessfulStatusCode(
+                            httpResponse.statusCode
+                        )
+                    )
+                }
+
+                return
+            }
+
+            do {
+                let decoder = JSONDecoder()
+
+                decoder.dateDecodingStrategy = .formatted(
+                    DateFormatter.firestoreDateFormatter
+                )
+
+                let documentsContainer = try decoder.decode(
+                    DocumentsContainer.self,
+                    from: data
+                )
+
+                DispatchQueue.main.async {
+                    completionHandler(
+                        documentsContainer.documents,
+                        nil
+                    )
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completionHandler(nil, .invalidResponse)
+                }
+            }
         }
-        
+
         task.resume()
     }
 }
