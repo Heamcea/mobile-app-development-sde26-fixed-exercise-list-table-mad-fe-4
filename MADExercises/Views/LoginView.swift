@@ -14,9 +14,7 @@ struct LoginView: View {
     @State private var password = ""
     
     @State private var isLoading = false
-    
-    @State private var isLoggedIn = false
-        
+            
     @State private var alertTitle = ""
     
     @State private var alertMessage = ""
@@ -159,7 +157,6 @@ struct LoginView: View {
             isLoading = false
             
             if let user {
-                displayAlert("Success", "Login successful for \(user.email)")
                 loggedInUser = user
                 navigateToCountries = true
                 return

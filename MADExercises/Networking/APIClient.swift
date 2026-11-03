@@ -119,4 +119,37 @@ class APIClient {
         }
         task.resume()
     }
+    
+    func getCountries(loggedInUser: User) {
+        let endpoint = "https://firestore.googleapis.com/v1/projects/mad-fe/databases/(default)/documents/countries?pageSize=1000&orderBy=name"
+        
+        guard let url = URL(string: endpoint) else {
+            print("URL incorrect")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        
+        request.httpMethod = "get"
+        
+        request.setValue("Bearer \(loggedInUser.idToken)", forHTTPHeaderField: "Authorization")
+        
+        let task = urlSession.dataTask(with: request) { data, response, error in
+            
+            #if DEBUG
+            print("Counties Data")
+            
+            if let data {
+                print(
+                    String(data: data, encoding: .utf8) ?? "can't convert countries to string"
+                )
+            }
+            
+            print(response as Any)
+            print(error as Any)
+            #endif
+        }
+        
+        task.resume()
+    }
 }

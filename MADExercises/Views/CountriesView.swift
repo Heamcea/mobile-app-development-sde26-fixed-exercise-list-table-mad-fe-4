@@ -15,5 +15,8 @@ struct CountriesView: View {
     var body: some View {
         Text("Countries")
             .navigationTitle("Countries")
+            .onAppear {
+                apiClient.getCountries(loggedInUser: loggedInUser)
+            }
     }
 }
