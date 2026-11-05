@@ -133,7 +133,7 @@ class APIClient {
         
         var request = URLRequest(url: url)
         
-        request.httpMethod = "get"
+        request.httpMethod = "GET"
         
         request.setValue("Bearer \(loggedInUser.idToken)", forHTTPHeaderField: "Authorization")
         
@@ -173,18 +173,38 @@ class APIClient {
             }
 
             guard (200..<300).contains(httpResponse.statusCode) else {
-                DispatchQueue.main.async {
-                    completionHandler(
-                        nil,
-                        .unsuccessfulStatusCode(
-                            httpResponse.statusCode
-                        )
+                do {
+                    let responseError = try JSONDecoder().decode(
+                        CountriesResponseError.self,
+                        from: data
                     )
+
+                    #if DEBUG
+                    print(responseError.error)
+                    #endif
+
+                    DispatchQueue.main.async {
+                        completionHandler(
+                            nil,
+                            .unsuccessfulStatusCode(
+                                responseError.error.code
+                            )
+                        )
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        completionHandler(
+                            nil,
+                            .unsuccessfulStatusCode(
+                                httpResponse.statusCode
+                            )
+                        )
+                    }
                 }
 
                 return
             }
-
+            
             do {
                 let decoder = JSONDecoder()
 
